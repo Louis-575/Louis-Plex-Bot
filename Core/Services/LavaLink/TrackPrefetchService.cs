@@ -14,15 +14,15 @@ public class TrackPrefetchService(IHttpClientFactory httpClientFactory) : ITrack
     private volatile string? _currentlyPrefetching;
 
     /// <inheritdoc />
-    public async Task PrefetchNextAsync(QueuedLavalinkPlayer player, CancellationToken cancellationToken = default)
+    public async Task PrefetchNextAsync(CustomLavaLinkPlayer player, CancellationToken cancellationToken = default)
     {
         try
         {
             // Peek at the next item in the queue
             if (player.Queue.Count == 0) return;
 
-            ITrackQueueItem? nextItem = player.Queue.FirstOrDefault();
-            if (nextItem is not CustomTrackQueueItem nextTrack) return;
+            CustomTrackQueueItem? nextTrack = player.Queue.FirstOrDefault();
+            if (nextTrack is null) return;
 
             string? artworkUrl = nextTrack.Artwork;
             if (string.IsNullOrEmpty(artworkUrl) || artworkUrl == "N/A") return;

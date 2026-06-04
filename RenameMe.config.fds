@@ -2,7 +2,7 @@
 # PlexBot Application Configuration
 # ============================================
 # This file controls bot behavior and UI settings.
-# Secrets and infrastructure (tokens, Lavalink, Plex URLs) stay in .env
+# Secrets and infrastructure (tokens, Plex URLs) stay in .env
 #
 # Format: Frenetic Data Syntax (FDS) - similar to YAML
 # Docs: https://github.com/FreneticLLC/FreneticUtilities

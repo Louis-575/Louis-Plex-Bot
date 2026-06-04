@@ -1,10 +1,11 @@
 using PlexBot.Utils;
+using PlexBot.Core.Services.LavaLink;
 
 namespace PlexBot.Core.Models.Players;
 
 /// <summary>Represents configuration options for a music player with customizable settings that control player behavior</summary>
 /// <param name="CurrentPlayerChannel">The Discord text channel initially specified for player messages</param>
-public record PlayerOptions(ITextChannel? CurrentPlayerChannel) : QueuedLavalinkPlayerOptions
+public record PlayerOptions(ITextChannel? CurrentPlayerChannel)
 {
     /// <summary>Initial volume level (0.0 to 1.0) used when the player starts playback</summary>
     public float DefaultVolume { get; set; } = 0.5f;
@@ -36,11 +37,6 @@ public record PlayerOptions(ITextChannel? CurrentPlayerChannel) : QueuedLavalink
     /// <summary>Creates a new PlayerOptions instance with default settings for consistent player configuration</summary>
     public PlayerOptions() : this((ITextChannel?)null)
     {
-        // Base QueuedLavalinkPlayerOptions settings
-        DisconnectOnStop = false;
-        SelfDeaf = true;
-
-        // Extended settings specific to our application
         DefaultVolume = 0.2f;
         DisconnectAfterPlayback = true;
         InactivityTimeout = TimeSpan.FromMinutes(2);

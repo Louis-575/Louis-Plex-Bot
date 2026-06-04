@@ -31,20 +31,6 @@ fi
 
 echo "Using compose command: $COMPOSE"
 
-# Create plugins directory for Lavalink
-mkdir -p "$DOCKER_DIR/plugins"
-
-# Generate Lavalink config from base template + extension plugin fragments.
-# Uses the same mikefarah/yq Docker image that docker-compose uses for the init container.
-# This always regenerates so adding/removing extensions is picked up on re-install.
-echo "Generating Lavalink configuration from base template + extension fragments..."
-docker run --rm --entrypoint sh \
-    -v "$ROOT_DIR/Extensions:/extensions:ro" \
-    -v "$DOCKER_DIR/lavalink.base.yml:/config/base.yml:ro" \
-    -v "$DOCKER_DIR/generate-lavalink-config.sh:/config/generate.sh:ro" \
-    -v "$DOCKER_DIR:/output" \
-    mikefarah/yq:latest /config/generate.sh /extensions /output /config/base.yml
-
 # Check if .env file exists
 if [ ! -f "$ROOT_DIR/.env" ]; then
     echo ""

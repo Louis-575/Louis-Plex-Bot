@@ -1,22 +1,57 @@
-# ── Build Stage ──────────────────────────────────────────────────────────────
+# Build stage
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 WORKDIR /source
 
 COPY . .
 
-RUN dotnet restore
-RUN dotnet publish -c Release -o /app
+RUN dotnet restore PlexBot.csproj
+RUN dotnet publish PlexBot.csproj -c Release -o /app
 
-# ── Runtime Stage (SDK required for live-source rebuild support) ─────────────
+# Build Discord's DAVE native library for encrypted voice.
+FROM debian:bookworm-slim AS libdave-build
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    autoconf \
+    automake \
+    build-essential \
+    ca-certificates \
+    cmake \
+    curl \
+    git \
+    libtool \
+    ninja-build \
+    pkg-config \
+    python3 \
+    tar \
+    unzip \
+    zip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --recursive --depth 1 https://github.com/discord/libdave.git /build/libdave \
+    && cd /build/libdave/cpp \
+    && ./vcpkg/bootstrap-vcpkg.sh \
+    && make shared \
+    && mkdir -p /out \
+    && find . -name 'libdave.so*' -print -exec cp {} /out/libdave.so \; \
+    && test -f /out/libdave.so
+
+# Runtime stage (SDK required for live-source rebuild support)
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS runtime
 
 WORKDIR /app
 
-# Install dependencies and fonts for CJK / emoji rendering (ImageSharp)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    ffmpeg \
     git \
+    libopus-dev \
+    libopus0 \
+    libssl3 \
+    libsodium-dev \
+    libsodium23 \
     fontconfig \
     fonts-dejavu \
     fonts-liberation \
@@ -27,14 +62,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-ipafont-mincho \
     && rm -rf /var/lib/apt/lists/*
 
-# Install yq for Lavalink config generation (used by startup.sh for live-source-mount rebuilds)
-RUN curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
-    -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
-
-# Copy build output (includes Images/ since it's part of the project)
 COPY --from=build /app .
+COPY --from=libdave-build /out/libdave.so /app/libdave.so
 
-# Copy and set up the startup script (sed strips Windows \r line endings)
 COPY Install/Docker/startup.sh /app/startup.sh
 RUN sed -i 's/\r$//' /app/startup.sh && chmod +x /app/startup.sh
 

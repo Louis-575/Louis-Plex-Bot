@@ -143,7 +143,7 @@ cd PlexBot
 
 2. **App settings** *(optional)*: `config.fds` is auto-created from the template with sensible defaults if it doesn't exist. To customize player style, logging, or behavior, copy `RenameMe.config.fds` to `config.fds` and edit it before starting (see [Configuration](#configuration) below).
 
-3. **Run the install script**: `Install/win-install.bat` (Windows) or `Install/linux-install.sh` (Linux). This generates the Lavalink config, builds the Docker images, and starts the bot.
+3. **Run the install script**: `Install/win-install.bat` (Windows) or `Install/linux-install.sh` (Linux). This builds the Docker image, installs ffmpeg in the container, and starts the bot.
 
 ---
 
@@ -163,10 +163,6 @@ PlexBot uses **two config files**:
 | `DISCORD_TOKEN` | Discord bot token | Yes |
 | `PLEX_URL` | Plex server URL with port (e.g. `http://192.168.1.50:32400`) | Yes |
 | `PLEX_TOKEN` | Plex authentication token | Yes |
-| `LAVALINK_HOST` | Lavalink hostname. Use `Lavalink` for Docker, or an IP/hostname for remote (default: `Lavalink`) | No |
-| `LAVALINK_SERVER_PORT` | Lavalink port (default: `2333`) | No |
-| `LAVALINK_SERVER_PASSWORD` | Lavalink password (default: `youshallnotpass`) | No |
-| `LAVALINK_SECURE` | Use HTTPS/WSS for Lavalink. Set `true` for remote servers behind SSL (default: `false`) | No |
 
 ### `config.fds` Application Settings
 
@@ -239,24 +235,7 @@ See the [Configuration Guide](./Docs/Setup/Configuration.md) for a detailed walk
 
 PlexBot supports Docker for easy deployment. See the [Docker Guide](./Docs/Setup/Docker-Guide.md).
 
-The default install runs both PlexBot and Lavalink together in Docker with no extra setup needed.
-
----
-
-## Remote Lavalink (Advanced)
-
-By default, the install scripts run Lavalink alongside PlexBot in Docker. If you want to run Lavalink on a separate machine (e.g. a dedicated audio server, or a shared Lavalink instance), you can point PlexBot to it by changing three values in your `.env`:
-
-```env
-LAVALINK_HOST=192.168.1.100        # IP or hostname of your Lavalink server
-LAVALINK_SERVER_PORT=2333          # Must match Lavalink's application.yml
-LAVALINK_SERVER_PASSWORD=mypassword  # Must match Lavalink's application.yml
-LAVALINK_SECURE=false              # Set true if behind a reverse proxy with SSL
-```
-
-Then remove or comment out the `lavalink` service and `depends_on` block in `Install/Docker/docker-compose.yml`. PlexBot will connect to your remote Lavalink instead.
-
-> **Note:** When running Lavalink separately, you are responsible for installing Java 17+, downloading the [Lavalink server jar](https://github.com/lavalink-devs/Lavalink/releases), configuring its `application.yml`, and keeping it updated. See the [Lavalink docs](https://lavalink.dev) for setup instructions.
+The default install runs PlexBot as a single Docker service. Audio is decoded locally by ffmpeg inside the bot container.
 
 ---
 
@@ -275,40 +254,9 @@ PlexBot's [Extensions system](./Docs/Extensions/CreatingExtensions.md) lets you 
 
 ---
 
-## Performance Tuning (Audio Stuttering Fix)
+## Performance Tuning
 
-If you experience brief audio stuttering or "CD skip" sounds during playback, especially when other applications are running on the same machine, this is caused by Lavalink's audio thread being interrupted by the OS.
-
-**How audio streaming works:** Lavalink (a Java process) must send an Opus audio frame to Discord exactly every 20 milliseconds. When your CPU is under load, the OS scheduler can preempt Lavalink's thread, causing a missed frame and an audible glitch. PlexBot itself does not touch the audio stream and only handles commands and UI.
-
-Two optional settings can help:
-
-### JVM Garbage Collection Tuning
-Uncomment `_JAVA_OPTIONS` in your `.env` file to switch Java from its default garbage collector to **ZGC**, which keeps GC pauses under 1ms (the default can pause for 10-50ms).
-
-```env
-_JAVA_OPTIONS=-XX:+UseZGC -XX:+ZGenerational -Xms256m -Xmx512m
-```
-
-| Pros | Cons |
-|------|------|
-| Eliminates GC-related audio stuttering | Uses ~10-20% more memory than the default GC |
-| Sub-millisecond pause times | Requires Java 21+ (included in the Lavalink 4 Docker image) |
-
-### CPU Pinning & Priority
-Uncomment `cpuset` and `cpu_shares` in [`Install/Docker/docker-compose.yml`](./Install/Docker/docker-compose.yml) to reserve dedicated CPU cores for Lavalink so other processes cannot starve it. These are Docker Compose directives and can only be configured in the YAML file.
-
-```yaml
-cpuset: "0,1"
-cpu_shares: 2048
-```
-
-| Pros | Cons |
-|------|------|
-| Prevents other processes from starving the audio thread | Pinned cores are less available to other containers |
-| No stuttering even under heavy host CPU load | Requires knowing which cores to dedicate |
-
-> **Only enable these if you are experiencing stuttering.** Most users running PlexBot on a dedicated server or low-traffic machine will not need them.
+PlexBot now streams audio through ffmpeg inside the bot process. If you run outside Docker, make sure `ffmpeg` is installed and available on `PATH`. If you experience audio stuttering in Docker, start by checking host CPU load and the bot logs with `docker compose -p plexbot logs -f`.
 
 ---
 

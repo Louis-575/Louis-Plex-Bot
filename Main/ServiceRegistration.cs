@@ -51,7 +51,7 @@ namespace PlexBot.Main
         private static void AddDiscordServices(IServiceCollection services)
         {
             // Configure Discord client
-            // LogSeverity.Debug ensures all Discord/Lavalink messages reach our Logs class,
+            // LogSeverity.Debug ensures all Discord/player messages reach our Logs class,
             // which handles console filtering (LOGGING_LEVEL_ROOT) and always saves everything to file
             services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
             {
@@ -69,7 +69,10 @@ namespace PlexBot.Main
                 UseSystemClock = false,
                 // Disable local 3-second interaction deadline check that uses snowflake
                 // timestamps — Docker clock drift can cause false rejections.
-                UseInteractionSnowflakeDate = false
+                UseInteractionSnowflakeDate = false,
+                // Discord voice now requires DAVE-capable clients. The Docker image
+                // builds libdave and copies it into the app directory for this.
+                EnableVoiceDaveEncryption = true
             }));
 
             // Configure interaction service
@@ -103,38 +106,10 @@ namespace PlexBot.Main
             services.AddSingleton<IPlexSonicService, PlexSonicService>();
         }
 
-        /// <summary>Configures Lavalink audio streaming services and player management for music playback</summary>
+        /// <summary>Configures local ffmpeg audio streaming services and player management for music playback</summary>
         /// <param name="services">The service collection to add services to</param>
         private static void AddPlayerServices(IServiceCollection services)
         {
-            // Add Lavalink services
-            services.AddLavalink();
-            services.ConfigureLavalink(options =>
-            {
-                string password = EnvConfig.Get("LAVALINK_SERVER_PASSWORD", "youshallnotpass");
-                string host = EnvConfig.Get("LAVALINK_HOST", "lavalink");
-                string port = EnvConfig.Get("LAVALINK_SERVER_PORT", "2333");
-                bool secure = EnvConfig.GetBool("LAVALINK_SECURE", false);
-                string scheme = secure ? "https" : "http";
-
-                options.Label = "PlexBot";
-                options.Passphrase = password;
-                options.HttpClientName = host;
-                options.BufferSize = 1024 * 1024 * 4;
-                options.BaseAddress = new Uri($"{scheme}://{host}:{port}");
-                options.ResumptionOptions = new LavalinkSessionResumptionOptions(TimeSpan.FromSeconds(60));
-            });
-
-            // Add inactivity tracking - auto-disconnects when no users in voice or player idle
-            TimeSpan inactivityTimeout = TimeSpan.FromMinutes(BotConfig.GetDouble("visualPlayer.inactivityTimeout", 2.0));
-            services.AddInactivityTracking();
-            services.ConfigureInactivityTracking(options =>
-            {
-                options.DefaultTimeout = inactivityTimeout;
-                options.DefaultPollInterval = TimeSpan.FromSeconds(5);
-                options.UseDefaultTrackers = true;
-            });
-
             // Register options
             services.Configure<PlayerOptions>(options => {
                 options.DefaultVolume = 0.2f;
@@ -148,12 +123,12 @@ namespace PlexBot.Main
                 options.DefaultRepeatMode = TrackRepeatMode.None;
             });
             // Add player services
-            services.AddSingleton<ITrackResolverService, TrackResolverService>();
             services.AddSingleton<ITrackPrefetchService, TrackPrefetchService>();
+            services.AddSingleton<FfmpegPlayerManager>();
             services.AddSingleton<IPlayerService, PlayerService>();
             // Register the state manager as a singleton
             services.AddSingleton<VisualPlayerStateManager>();
-            // Add caching for better performance with Lavalink
+            // Add caching for player artwork
             services.AddMemoryCache();
         }
 

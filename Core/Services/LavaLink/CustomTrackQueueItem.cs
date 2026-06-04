@@ -3,14 +3,8 @@ using PlexBot.Core.Models.Media;
 namespace PlexBot.Core.Services.LavaLink;
 
 /// <summary>Enhanced track queue item that holds a reference to the source Track model and exposes metadata through convenience properties for UI compatibility</summary>
-public class CustomTrackQueueItem : ITrackQueueItem
+public class CustomTrackQueueItem
 {
-    /// <summary>The Lavalink track reference for audio streaming. Null until resolved.</summary>
-    public TrackReference Reference { get; set; }
-
-    /// <summary>Provides access to the underlying Lavalink track object through the interface implementation</summary>
-    LavalinkTrack? ITrackQueueItem.Track => Reference.Track;
-
     /// <summary>The source track metadata from Plex/YouTube/etc.</summary>
     public Track SourceTrack { get; init; } = new();
 
@@ -27,9 +21,6 @@ public class CustomTrackQueueItem : ITrackQueueItem
     public string? ArtistUrl => SourceTrack.ArtistUrl;
     public string? Duration => SourceTrack.DurationDisplay;
     public string? Studio => SourceTrack.Studio;
-
-    /// <summary>Implementation of the interface's type conversion method to support Lavalink's player architecture</summary>
-    public T? As<T>() where T : class, ITrackQueueItem => this as T;
 
     /// <summary>Generates a user-friendly string representation of this track for logging and debugging</summary>
     public override string ToString() => $"{Title} by {Artist} ({Duration})";

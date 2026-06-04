@@ -15,7 +15,7 @@ namespace PlexBot.Core.Discord.Commands;
 
 /// <summary>Provides discord slash commands for music playback with interactive UI components to control playback and manage the music queue</summary>
 public class MusicCommands(IPlexMusicService plexMusicService, IPlayerService playerService,
-    IAudioService audioService, MusicProviderRegistry providerRegistry, IPlexSonicService plexSonicService)
+    MusicProviderRegistry providerRegistry, IPlexSonicService plexSonicService)
     : InteractionModuleBase<SocketInteractionContext>
 {
 
@@ -439,7 +439,7 @@ public class MusicCommands(IPlexMusicService plexMusicService, IPlayerService pl
         }
     }
 
-    /// <summary>Attempts URL playback via registered providers first, then Lavalink fallback,
+    /// <summary>Attempts URL playback via registered providers first, then direct ffmpeg URL playback,
     /// or searches Plex library and auto-plays the best match (track → album → artist)</summary>
     [SlashCommand("play", "Play a track by URL or search term")]
     public async Task PlayCommand(
@@ -502,8 +502,7 @@ public class MusicCommands(IPlexMusicService plexMusicService, IPlayerService pl
         }
     }
 
-    /// <summary>Tries each registered provider's CanHandleUrl first (e.g. YouTube provider claims youtube.com),
-    /// then falls back to generic Lavalink loading for unclaimed URLs</summary>
+    /// <summary>Tries each registered provider's CanHandleUrl first, then falls back to direct ffmpeg URL playback.</summary>
     public async Task HandleUrlPlaybackAsync(string url, Uri parsedUri)
     {
         try
@@ -522,26 +521,13 @@ public class MusicCommands(IPlexMusicService plexMusicService, IPlayerService pl
                 }
             }
 
-            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
-            TrackLoadResult loadResult = await audioService.Tracks.LoadTracksAsync(
-                url, TrackSearchMode.None, cancellationToken: cts.Token);
-
-            LavalinkTrack? lavalinkTrack = loadResult.Track;
-            if (lavalinkTrack is null)
-            {
-                await FollowupAsync(components: ComponentV2Builder.Error("Not Found",
-                    "Could not load a playable track from this URL."), ephemeral: true);
-                return;
-            }
-
             Track track = Track.CreateFromUrl(
-                lavalinkTrack.Title ?? "Unknown Title",
-                lavalinkTrack.Author ?? "Unknown Artist",
+                parsedUri.Host,
+                "External URL",
                 url,
-                lavalinkTrack.ArtworkUri?.ToString() ?? "",
+                "",
                 "external");
-            track.DurationMs = (long)lavalinkTrack.Duration.TotalMilliseconds;
-            track.DurationDisplay = FormatHelper.FormatDuration(lavalinkTrack.Duration);
+            track.DurationDisplay = "Live/Unknown";
 
             await playerService.AddToQueueAsync(Context.Interaction, [track]);
         }

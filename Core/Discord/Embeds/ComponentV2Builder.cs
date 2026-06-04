@@ -1,4 +1,5 @@
 using PlexBot.Utils;
+using PlexBot.Core.Services.LavaLink;
 
 using Color = Discord.Color;
 

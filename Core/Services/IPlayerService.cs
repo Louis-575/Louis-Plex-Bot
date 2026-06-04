@@ -1,4 +1,5 @@
 using PlexBot.Core.Models.Media;
+using PlexBot.Core.Services.LavaLink;
 
 namespace PlexBot.Core.Services;
 
@@ -11,7 +12,7 @@ public interface IPlayerService
     /// <param name="cancellationToken">Optional token to cancel the operation if the request times out or is abandoned</param>
     /// <returns>A configured player ready for audio operations, or null if the user isn't in a voice channel when required</returns>
     /// <exception cref="PlayerException">Thrown when voice connection fails or the player cannot be initialized properly</exception>
-    Task<QueuedLavalinkPlayer?> GetPlayerAsync(IDiscordInteraction interaction, bool connectToVoiceChannel = true,
+    Task<CustomLavaLinkPlayer?> GetPlayerAsync(IDiscordInteraction interaction, bool connectToVoiceChannel = true,
         CancellationToken cancellationToken = default);
 
     /// <summary>Initiates playback of a single track, handling all aspects from source retrieval to streaming setup</summary>

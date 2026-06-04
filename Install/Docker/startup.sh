@@ -19,17 +19,6 @@ if [ "${AUTO_UPDATE:-false}" = "true" ] && [ -d "$SOURCE_DIR/.git" ]; then
     cd "$APP_DIR"
 fi
 
-# Regenerate Lavalink config from base template + extension fragments.
-# The generated file is mounted directly into the Lavalink container from the host.
-# This covers live-source-mount scenarios where extensions changed after initial startup.
-DOCKER_DIR="/source/Install/Docker"
-EXTENSIONS_DIR="${EXTENSIONS_SOURCE_DIR:-/source/Extensions}"
-if [ -f "$DOCKER_DIR/generate-lavalink-config.sh" ] && command -v yq >/dev/null 2>&1; then
-    echo "Regenerating Lavalink configuration..."
-    sh "$DOCKER_DIR/generate-lavalink-config.sh" "$EXTENSIONS_DIR" "$DOCKER_DIR" "$DOCKER_DIR/lavalink.base.yml"
-    echo "Note: Restart Lavalink container if plugin config changed."
-fi
-
 BUILD_MARKER="$APP_DIR/.last-build"
 
 # Check if rebuild is needed
@@ -68,8 +57,8 @@ need_rebuild() {
 if need_rebuild; then
     echo "Rebuilding project from source..."
     cd "$SOURCE_DIR"
-    dotnet restore
-    dotnet publish -c Release -o "$APP_DIR"
+    dotnet restore PlexBot.csproj
+    dotnet publish PlexBot.csproj -c Release -o "$APP_DIR"
     touch "$BUILD_MARKER"
     echo "Rebuild complete."
 fi

@@ -8,7 +8,7 @@ namespace PlexBot.Core.Discord.Embeds;
 public class VisualPlayer(
     VisualPlayerStateManager stateManager,
     IOptions<PlayerOptions> playerOptions,
-    IAudioService audioService,
+    FfmpegPlayerManager playerManager,
     DiscordButtonBuilder buttonBuilder,
     ITrackPrefetchService prefetchService) : IDisposable
 {
@@ -21,7 +21,7 @@ public class VisualPlayer(
         {
             ulong guildId = stateManager.CurrentPlayerChannel?.GuildId ?? 0;
             CustomLavaLinkPlayer? player = guildId > 0
-                ? await audioService.Players.GetPlayerAsync(guildId) as CustomLavaLinkPlayer
+                ? playerManager.GetPlayer(guildId)
                 : null;
 
             string? statusLine = stateManager.UseProgressBar ? BuildStatusLine(player) : null;
@@ -162,7 +162,7 @@ public class VisualPlayer(
                 ulong guildId = stateManager.CurrentPlayerChannel?.GuildId ?? 0;
                 if (guildId == 0 || stateManager.CurrentPlayerMessage == null) continue;
 
-                var player = await audioService.Players.GetPlayerAsync(guildId).ConfigureAwait(false) as CustomLavaLinkPlayer;
+                var player = playerManager.GetPlayer(guildId);
                 if (player == null || player.State == PlayerState.NotPlaying || player.State == PlayerState.Destroyed)
                 {
                     StopProgressTimer();

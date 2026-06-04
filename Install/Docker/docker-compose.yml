@@ -1,70 +1,24 @@
 name: PlexBot
 
 services:
-  # PlexBot Service
   plexbot:
     container_name: PlexBot
     image: ghcr.io/plexbot/plexbot:latest
     build:
-      context: ../..  # This points to the project root from Docker folder
+      context: ../..
       dockerfile: Install/Docker/dockerfile
     restart: unless-stopped
-    depends_on:
-      - lavalink
     volumes:
-      - ../..:/source  # Mount project root as /source
+      - ../..:/source
       - ../../data:/app/data
       - ../../logs:/app/logs
-      - ../../.env:/app/.env  # Mount directly to app root
-      # config.fds is auto-created from template by startup.sh if missing.
-      # Uncomment to persist custom settings across container rebuilds:
-      # - ../../config.fds:/app/config.fds
+      - ../../.env:/app/.env
       - ../../Images:/app/Images
     environment:
       - DOTNET_ENVIRONMENT=Production
       - EXTENSIONS_SOURCE_DIR=/source/Extensions
     env_file:
       - ../../.env
-    networks:
-      - plexbot-network
-
-  # Lavalink Service
-  # Config file (lavalink.application.yml) is generated on the host by the install
-  # script or startup.sh, then mounted directly — no init container needed.
-  lavalink:
-    container_name: LavaLink
-    image: ghcr.io/lavalink-devs/lavalink:4
-    restart: unless-stopped
-    env_file:
-      - ../../.env
-    environment:
-      # Map PlexBot env vars to what the Lavalink container expects
-      - SERVER_PORT=${LAVALINK_SERVER_PORT:-2333}
-      - SERVER_ADDRESS=0.0.0.0
-      - LAVALINK_SERVER_PASSWORD=${LAVALINK_SERVER_PASSWORD:-youshallnotpass}
-      # JVM tuning — uncomment _JAVA_OPTIONS in .env to enable ZGC (reduces audio stuttering)
-      - _JAVA_OPTIONS=${_JAVA_OPTIONS:-}
-      # Disable Spring Cloud Config — Lavalink uses a local file, not a config server
-      - SPRING_CLOUD_CONFIG_ENABLED=false
-      # Read generated config mounted from host
-      - SPRING_CONFIG_LOCATION=file:///opt/Lavalink/config/lavalink.application.yml
-    volumes:
-      - ./lavalink.application.yml:/opt/Lavalink/config/lavalink.application.yml:ro
-      - ./plugins:/opt/Lavalink/plugins
-      - ../../logs/lavalink:/opt/Lavalink/logs
-    ports:
-      - "${LAVALINK_SERVER_PORT:-2333}:${LAVALINK_SERVER_PORT:-2333}"
-    # --- Optional: CPU Pinning & Priority ---
-    # Reserves dedicated CPU cores for Lavalink so other processes on the host
-    # cannot starve its audio thread. Lavalink must send an Opus frame every 20ms;
-    # if the OS scheduler preempts it (e.g. when opening a browser), you hear a stutter.
-    # Only uncomment if you experience audio stuttering and are running other
-    # workloads on the same machine.
-    # Tradeoffs:
-    #   - cpuset pinning makes those cores unavailable to other containers
-    #   - cpu_shares only affects scheduling under contention, no impact when idle
-    # cpuset: "0,1"        # Pin Lavalink to CPU cores 0 and 1
-    # cpu_shares: 2048      # Double default priority (1024) under CPU contention
     networks:
       - plexbot-network
 

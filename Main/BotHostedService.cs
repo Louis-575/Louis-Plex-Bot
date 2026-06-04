@@ -23,7 +23,7 @@ public class BotHostedService(DiscordSocketClient client, DiscordEventHandler ev
     private readonly string _discordToken = EnvConfig.Get("DISCORD_TOKEN")
             ?? throw new InvalidOperationException("DISCORD_TOKEN environment variable is not set");
 
-    /// <summary>Starts the bot service by initializing event handlers, loading extensions, and establishing connection to Discord and Lavalink</summary>
+    /// <summary>Starts the bot service by initializing event handlers, loading extensions, and establishing connection to Discord</summary>
     /// <param name="cancellationToken">Token to monitor for cancellation requests to safely abort startup operations</param>
     /// <returns>A task representing the asynchronous startup operation</returns>
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -33,10 +33,7 @@ public class BotHostedService(DiscordSocketClient client, DiscordEventHandler ev
             Logs.Init("Starting bot service");
             // Initialize event handlers
             await eventHandler.InitializeAsync();
-            // Initialize Lavalink services
-            IAudioService lavalinkNode = serviceProvider.GetRequiredService<IAudioService>();
-            await lavalinkNode.StartAsync(cancellationToken);
-            Logs.Init("Lavalink services initialized");
+            Logs.Init("Local ffmpeg player ready");
             // Initialize extensions (Phase 2 of two-phase startup — services already registered)
             int extensionsLoaded = await extensionManager.InitializeAllAsync(serviceProvider);
             Logs.Info($"Initialized {extensionsLoaded} extensions");
