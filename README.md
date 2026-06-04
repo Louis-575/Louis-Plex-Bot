@@ -1,18 +1,6 @@
-# ![PlexBot Banner](./Images/PlexBotBanner.png)
-> **Play your Plex music in Discord with style.** <sup><kbd>Alpha 0.5</kbd></sup>
----
-
-<!-- PLACEHOLDER: Add screenshots of the Modern Visual Player and Classic Player Embed below -->
-
-| Modern Visual Player | Classic Player Embed |
-|:-------------------:|:-------------------:|
-| ![Modern Player Screenshot](./Images/ModernPlayer.JPG) | ![Classic Player Screenshot](./Images/ClassicPlayer.JPG) |
-
----
-
 ## What Does this bot do and why did I make it?
 
-**PlexBot** is a next-generation Discord music bot designed for Plex users. Seamlessly stream your personal music library (and more!) into your server's voice channels, enjoy a beautiful visual player, and take advantage of a robust extension system for ultimate flexibility.
+**LouisPlexBot** is forked from PlexBot. It allows streaming music from a plex server into a discord call using ffmpeg, instead of lavalink. It supports playing FLAC content which lavalink struggles with.
 
 ---
 
@@ -21,7 +9,6 @@
 - **Stream from Plex**: Play tracks, albums, artists, and playlists directly from your Plex server.
 - **Plex Sonic Features**: Mood & genre browsing via `/search`, plus Similar Tracks, Radio, and Sonic Adventure buttons on the player, all powered by Plex's neural audio analysis.
 - **Radio**: Start a radio station from any track with one button press. Optionally enable infinite radio to auto-refill the queue.
-- **YouTube Support**: Search and play music from YouTube via extension.
 - **Interactive Player UI**: Choose between a modern image-based player or a classic Discord embed.
 - **Static Player Channel**: Optionally dedicate a channel for the persistent player UI.
 - **Rich Queue Management**: Add, remove, shuffle, and loop tracks with intuitive controls.
